@@ -17,7 +17,6 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 
-
 import cz.msebera.android.httpclient.Header;
 
 /**
@@ -26,13 +25,13 @@ import cz.msebera.android.httpclient.Header;
 
 public class ContactsModel{
 
-    private String contactUsername;
-    private String onlineStatus;
     //TODO change the logic
     // instead of having an array of chats just have a hashMap with name and online status
-    // save time and space onstead of creating a new object for every contact
+    // save time and space instead of creating a new object for every contact
     // So I also have to change the adapter inside the ContactAdpater class to accpect hashMap and update the logic in there
     public List<ContactsModel> contactsModels = new ArrayList<>();
+    private String contactUsername;
+    private String onlineStatus;
     private ContactsFragment.ContactAdapter adapter;
     private SwipeRefreshLayout swipeRefreshLayout;
     private Context context;

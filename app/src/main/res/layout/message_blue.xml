@@ -13,11 +13,12 @@
 
         <TextView
             android:id="@+id/textView_messageBlue"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="center"
+            android:layout_gravity="center_vertical|center"
+            android:gravity="center_vertical|center"
             android:maxWidth="100dp"
-            android:padding="5dp"
+            android:padding="10dp"
             android:textColor="@color/third_text" />
 
     </LinearLayout>

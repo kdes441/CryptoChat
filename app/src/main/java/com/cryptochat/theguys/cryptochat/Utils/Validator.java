@@ -7,8 +7,6 @@ package com.cryptochat.theguys.cryptochat.Utils;
 
 public class Validator {
 
-
-
     public boolean firstNameCheck(String firstName){
         String pattern = "^[a-zA-Z]{4,25}$";
         return firstName.matches(pattern);
@@ -31,7 +29,7 @@ public class Validator {
 
     public boolean passwordCheck(String password){
         //^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=])(?=\S+$).{8,25}$
-        String pattern = "^[a-zA-Z]{6,25}$";
+        String pattern = "^[a-zA-Z0-9]{6,25}$";
         return password.matches(pattern);
     }
 }

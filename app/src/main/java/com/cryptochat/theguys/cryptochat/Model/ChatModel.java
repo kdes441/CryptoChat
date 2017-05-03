@@ -1,14 +1,9 @@
 package com.cryptochat.theguys.cryptochat.Model;
 
 
-import com.cryptochat.theguys.cryptochat.Controller.ChatActivity;
-import com.cryptochat.theguys.cryptochat.Utils.ChatClient;
 import com.cryptochat.theguys.cryptochat.Utils.Utils;
 import com.cryptochat.theguys.cryptochat.Utils.WSClient;
 
-import java.util.HashMap;
-import java.util.Hashtable;
-import java.util.List;
 import java.util.Stack;
 
 /**
@@ -18,14 +13,13 @@ import java.util.Stack;
 public class ChatModel {
 
     private String chatParticipant;
-    private int position = 1;
 
     //Constructor
     public ChatModel(String chatParticipant){
         this.chatParticipant = chatParticipant;
     }
 
-    //Adds message to hashMap
+    //Sends message to user
     public void sendMessage(String sender, String message){
         WSClient.sendMessage(chatParticipant,message,sender);
     }
@@ -53,13 +47,4 @@ public class ChatModel {
         }
 
     }
-
-    //TODO please find another way
-    //Helper shit
-    public HashMap<String,String> getMapSet(String message){
-        HashMap<String,String> set = new HashMap<>();
-        set.put(Utils.USERNAME+position,message);
-        return set;
-    }
-
 }

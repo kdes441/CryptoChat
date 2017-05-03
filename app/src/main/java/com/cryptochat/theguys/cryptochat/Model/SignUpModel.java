@@ -53,38 +53,36 @@ public class SignUpModel {
 
         //Validates users input
         if(!validator.firstNameCheck(this.firstName)){
-            Toast.makeText(c, R.string.error_invalid_fname,Toast.LENGTH_SHORT).show();
+            Utils.toast(c.getResources().getString(R.string.error_invalid_fname), c);
             Utils.output("First name is invalid");
 
         } else if (!validator.lastNameCheck(this.lastName)){
-            Toast.makeText(c,R.string.error_invalid_lname,Toast.LENGTH_SHORT).show();
+            Utils.toast(c.getResources().getString(R.string.error_invalid_lname), c);
             Utils.output("Last name is invalid");
 
         } else if (!validator.emailCheck(this.email)){
-            Toast.makeText(c,R.string.error_invalid_email,Toast.LENGTH_SHORT).show();
+            Utils.toast(c.getResources().getString(R.string.error_invalid_email), c);
             Utils.output("Email is invalid");
 
         } else if (!validator.usernameCheck(this.username)){
-            Toast.makeText(c,R.string.error_invalid_username,Toast.LENGTH_SHORT).show();
+            Utils.toast(c.getResources().getString(R.string.error_invalid_username), c);
             Utils.output("Username is invalid");
 
         } else if (!validator.passwordCheck(this.password)){
-            Toast.makeText(c,R.string.error_invalid_password,Toast.LENGTH_SHORT).show();
+            Utils.toast(c.getResources().getString(R.string.error_invalid_password), c);
             Utils.output("Password is invalid");
 
         } else if (!validator.passwordCheck(this.passwordConfirm)){
-            Toast.makeText(c,R.string.error_invalid_password,Toast.LENGTH_SHORT).show();
+            Utils.toast(c.getResources().getString(R.string.error_invalid_password), c);
             Utils.output("Confirmation password is invalid");
 
         } else if(!this.password.equals(this.passwordConfirm)){
-            //Utils.toast(R.string.error_invalid_password_match,c);
-            Toast.makeText(c,R.string.error_invalid_password_match,Toast.LENGTH_SHORT).show();
+            Utils.toast(c.getResources().getString(R.string.error_invalid_password_match), c);
             Utils.output("Both passwords do not match.");
 
         } else{
             Utils.output("LoginModel input successfully made it through validation");
             successful = true;
-            //sendData(firstName,lastName,email,username,password);
         }
 
         return successful;

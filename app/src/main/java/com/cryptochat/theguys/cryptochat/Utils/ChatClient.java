@@ -15,9 +15,8 @@ import java.net.Socket;
 
 public class ChatClient {
 
-    private static final String SERVER_IP = "54.175.15.9";
-    private static final int PORT_NUMBER = 5665;
 
+    public static String username;
     //Global variables
     private static Socket connection;
     private static PrintStream output;
@@ -25,8 +24,43 @@ public class ChatClient {
     private static JSONObject outgoingMessage;
     private static JSONObject incomingMessage;
 
+    public static void sendMessage(String receiverName, String message) {
 
-    public static String username;
+        //Format for messages using JSON
+        outgoingMessage = new JSONObject();
+        try {
+            outgoingMessage.put("To", receiverName);
+            outgoingMessage.put("From", username);
+            outgoingMessage.put("MessageType", "regular");
+            outgoingMessage.put("Message", message);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                //Try to send the message_white
+                try {
+                    output.print(outgoingMessage.toString() + "\n");
+                    output.flush();
+                    Utils.output(outgoingMessage.toString());
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            }
+        });
+        thread.start();
+
+    }
+
+    /*
+     * Launch the application.
+     */
+    public static void startClient() {
+        Thread incomingMessages = new Thread(new incomingMessages());
+        incomingMessages.start();
+    }
 
     //Class which handles incoming messages on a new thread
     private static class incomingMessages implements Runnable{
@@ -45,7 +79,6 @@ public class ChatClient {
                 e1.printStackTrace();
                 //Setting doesn't Run to false stops the while loop from running
                 dontRun = false;
-                //System.exit(1);
             }
 
             //Format for messages using JSON
@@ -95,44 +128,6 @@ public class ChatClient {
             }
         }
 
-    }
-
-    public static void sendMessage(String receiverName,String message){
-
-        //Format for messages using JSON
-        outgoingMessage = new JSONObject();
-        try {
-            outgoingMessage.put("To", receiverName);
-            outgoingMessage.put("From", username);
-            outgoingMessage.put("MessageType", "regular");
-            outgoingMessage.put("Message", message);
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-
-        Thread thread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                //Try to send the message_white
-                try {
-                    output.print(outgoingMessage.toString()+"\n");
-                    output.flush();
-                    Utils.output(outgoingMessage.toString());
-                } catch (Exception ex) {
-                    ex.printStackTrace();
-                }
-            }
-        });
-        thread.start();
-
-    }
-
-    /*
-     * Launch the application.
-     */
-    public static void startClient() {
-        Thread incomingMessages = new Thread(new incomingMessages());
-        incomingMessages.start();
     }
 
 }

@@ -4,23 +4,18 @@ import android.content.Context;
 import android.content.Intent;
 import android.view.View;
 import android.widget.ProgressBar;
-import android.widget.Toast;
 
 import com.cryptochat.theguys.cryptochat.Controller.MainActivity;
 import com.cryptochat.theguys.cryptochat.R;
-import com.cryptochat.theguys.cryptochat.Utils.ChatClient;
 import com.cryptochat.theguys.cryptochat.Utils.HttpService;
 import com.cryptochat.theguys.cryptochat.Utils.Utils;
 import com.cryptochat.theguys.cryptochat.Utils.Validator;
-import com.cryptochat.theguys.cryptochat.Controller.LoginActivity;
 import com.cryptochat.theguys.cryptochat.Utils.WSClient;
 import com.loopj.android.http.AsyncHttpResponseHandler;
 import com.loopj.android.http.RequestParams;
 
 import org.json.JSONException;
 import org.json.JSONObject;
-
-import java.util.Stack;
 
 import cz.msebera.android.httpclient.Header;
 
@@ -55,11 +50,11 @@ public class LoginModel{
         Validator validator = new Validator();
 
         if (!validator.usernameCheck(username)){
-            Toast.makeText(c, R.string.error_invalid_username,Toast.LENGTH_SHORT).show();
+            Utils.toast(String.valueOf(R.string.error_invalid_username), c);
             Utils.output("Username is invalid");
 
         } else if (!validator.passwordCheck(password)){
-            Toast.makeText(c,R.string.error_invalid_password,Toast.LENGTH_SHORT).show();
+            Utils.toast(String.valueOf(R.string.error_invalid_password), c);
             Utils.output("Password is invalid");
 
         } else{
@@ -89,6 +84,7 @@ public class LoginModel{
         RequestParams params = new RequestParams();
         params.put("UserCreds", userInformation.toString());
 
+
         HttpService.post(Utils.LOGIN_ROUTE, params, new AsyncHttpResponseHandler() {
             @Override
             public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
@@ -106,7 +102,7 @@ public class LoginModel{
                     //Checks if its successful which means the json will have other information
                     if(success) {
                         Utils.USERNAME = res.getString("Username");
-                        Utils.USER_ID = res.getInt("UserID");
+                        Utils.USER_ID = res.getString("UserID");
 
                         //Creates socket connection with server and listens for incoming messages
                         //ChatClient.username = Utils.USERNAME;
@@ -115,18 +111,41 @@ public class LoginModel{
                         //Creates a webSocket with the server
                         new WSClient();
 
+                        //TEST
+                        ///////////////////////////////////////
+//                        Stack testStack = new Stack();
+//                        String msg1 = Utils.messageToJSON("Deems","Don't know");
+//                        String msg2 = Utils.messageToJSON("Kyle","What don't you know");
+//                        String msg3 = Utils.messageToJSON("Deems","A lot manne");
+//                        testStack.add(msg1);
+//                        testStack.add(msg2);
+//                        testStack.add(msg3);
+//                        Utils.SAVED_CHATS.put("Deems",testStack);
+//
+//                        Stack testStack2 = new Stack();
+//                        String msg4 = Utils.messageToJSON("Chris","Don't know");
+//                        String msg5 = Utils.messageToJSON("Kyle","What don't you know");
+//                        String msg6 = Utils.messageToJSON("Chris","Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor");
+//                        testStack2.add(msg4);
+//                        testStack2.add(msg5);
+//                        testStack2.add(msg6);
+//                        Utils.SAVED_CHATS.put("Chris",testStack2);
+                        ///////////////////////////////////////
+
                         progressBar.setProgress(0);
                         progressBar.setVisibility(View.INVISIBLE);
                         //If successful go to MainActivity
                         Intent intent = new Intent(c, MainActivity.class);
                         c.startActivity(intent);
-                    } else
-                        Toast.makeText(c,returnMessage,Toast.LENGTH_SHORT).show();
-
+                    } else {
+                        Utils.toast(returnMessage, c);
+                        progressBar.setProgress(0);
+                        progressBar.setVisibility(View.INVISIBLE);
+                    }
 
                 } catch (JSONException ex){
                     ex.printStackTrace();
-                    Toast.makeText(c,R.string.error_network,Toast.LENGTH_SHORT).show();
+                    Utils.toast(String.valueOf(R.string.error_network), c);
                 }
 
             }
@@ -140,7 +159,7 @@ public class LoginModel{
 
             @Override
             public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
-                Toast.makeText(c,R.string.error_network,Toast.LENGTH_SHORT).show();
+                Utils.toast(String.valueOf(R.string.error_network), c);
                 Utils.output(responseBody.toString());
             }
 

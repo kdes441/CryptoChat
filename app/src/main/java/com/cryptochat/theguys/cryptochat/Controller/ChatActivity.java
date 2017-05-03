@@ -13,16 +13,11 @@ import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 
-
 import com.cryptochat.theguys.cryptochat.Model.ChatModel;
 import com.cryptochat.theguys.cryptochat.R;
 import com.cryptochat.theguys.cryptochat.Utils.Utils;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Stack;
 
 /**
@@ -36,6 +31,14 @@ public class ChatActivity extends AppCompatActivity {
     private ChatModel chatModel;
     private ListView listView;
     private ChatAdapter adapter;
+    //Updates UI when a new message arrives
+    final Handler handler = new Handler() {
+        @Override
+        public void handleMessage(Message msg) {
+            String response = (String) msg.obj;
+            adapter.updateData(response);
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,7 +60,7 @@ public class ChatActivity extends AppCompatActivity {
         Utils.hideSoftKeyboard(this);
 
         //Assigns the handler to a handler in utils to update ui
-        Utils.handler = handler;
+        Utils.handlerChatWindow = handler;
     }
 
     //Handles back button press
@@ -72,6 +75,7 @@ public class ChatActivity extends AppCompatActivity {
         }
         return super.onOptionsItemSelected(item);
     }
+
     @Override
     public void onBackPressed() {
         Utils.CURRENT_CHAT = "";
@@ -108,18 +112,18 @@ public class ChatActivity extends AppCompatActivity {
         }
 
         //Updates the listView and adds a new message
-        //TODO I think the problem lies here where the most recent message bubble is changed
         public void updateData(String newMessage){
-            mData.add(0,newMessage);
+            mData.add(newMessage);
             notifyDataSetChanged();
         }
 
         //Saves messages to the main storage
         public void saveData(){
-            List list = Arrays.asList(mData);
-            Stack conversation = new Stack();
-            conversation.addAll(list);
-            Utils.SAVED_CHATS.put(chatModel.getChatParticipant(),conversation);
+            if (!mData.isEmpty()) {
+                Stack conversation = new Stack();
+                conversation.addAll(mData);
+                Utils.SAVED_CHATS.put(chatModel.getChatParticipant(), conversation);
+            }
         }
 
         @Override
@@ -129,7 +133,7 @@ public class ChatActivity extends AppCompatActivity {
 
         @Override
         public Object getItem(int position) {
-            return mData.get(getCount() - position - 1);
+            return mData.get(position);
         }
 
         @Override
@@ -140,7 +144,7 @@ public class ChatActivity extends AppCompatActivity {
         @Override
         public View getView(int position, View convertView, ViewGroup parent) {
 
-            String item = (String) getItem(position);
+            String item = getItem(position).toString();
             View rowView;
             TextView message;
 
@@ -157,13 +161,4 @@ public class ChatActivity extends AppCompatActivity {
             return rowView;
         }
     }
-
-    //Updates UI when a new message arrives
-    final Handler handler = new Handler(){
-        @Override
-        public void handleMessage(Message msg) {
-            String response = (String) msg.obj;
-            adapter.updateData(response);
-        }
-    };
 }

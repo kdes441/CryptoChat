@@ -1,10 +1,15 @@
 package com.cryptochat.theguys.cryptochat.Controller.Fragment;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.support.v4.app.Fragment;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
@@ -47,7 +52,17 @@ public class ChatsFragment extends Fragment {
     private MainActivity mainActivity;
     private ChatModel_Fragment chatModel;
     private ChatAdapter adapter;
-
+    private String messageParticipant;
+    private MyReceiver r;
+    private ListView listView;
+    private TextView emptyText;
+    //Updates UI when a new message arrives
+    final Handler handler = new Handler() {
+        @Override
+        public void handleMessage(Message msg) {
+            refresh();
+        }
+    };
     private OnFragmentInteractionListener mListener;
 
     public ChatsFragment() {
@@ -86,13 +101,21 @@ public class ChatsFragment extends Fragment {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_chats, container, false);
-        ListView listView = (ListView) view.findViewById(R.id.listView_chat_fragment);
+        listView = (ListView) view.findViewById(R.id.listView_chat_fragment);
         mainActivity = (MainActivity) getActivity();
         chatModel= new ChatModel_Fragment();
 
+
         adapter = new ChatAdapter(mainActivity.getApplicationContext(),chatModel.getChats());
         listView.setAdapter(adapter);
+
+        //Sets the listView to show default text if it is empty
+        emptyText = (TextView) view.findViewById(R.id.empty_chat_list);
+        //listView.setEmptyView(emptyText);
+
+        //Creates a context menu for rows in the listView
         registerForContextMenu(listView);
+
         //Listens for click on contact in the contact menu
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             public void onItemClick(AdapterView<?> parent, View view,
@@ -105,6 +128,7 @@ public class ChatsFragment extends Fragment {
 
             @Override
             public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+                messageParticipant = ((Map.Entry<String, String>) adapter.getItem(position)).getKey();
                 return false;
             }
         });
@@ -119,21 +143,28 @@ public class ChatsFragment extends Fragment {
                 chatModel.refresh();
                 adapter.updateData(chatModel.getChats());
                 adapter.notifyDataSetChanged();
-                swipeRefresh.setEnabled(false);
+                swipeRefresh.setRefreshing(false);
             }
         });
+
+        Utils.handlerChatPreview = handler;
 
         return view;
     }
 
-    //
+    //Refreshes the message listView
     public void refresh(){
         adapter.clear();
         chatModel.refresh();
         adapter.updateData(chatModel.getChats());
-        adapter.notifyDataSetChanged();
+        if (adapter.getCount() == 0) {
+            listView.setVisibility(View.GONE);
+            emptyText.setVisibility(View.VISIBLE);
+        } else {
+            listView.setVisibility(View.VISIBLE);
+            emptyText.setVisibility(View.GONE);
+        }
     }
-
 
     @Override
     public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
@@ -144,12 +175,12 @@ public class ChatsFragment extends Fragment {
 
     @Override
     public boolean onContextItemSelected(MenuItem item) {
-        item.getItemId();
-        if(item.getTitle()=="Delete Chat"){
-            Utils.SAVED_CHATS.remove("");
+        if (getUserVisibleHint()) {
+            Utils.SAVED_CHATS.remove(messageParticipant);
             refresh();
+            return true;
         }
-        return true;
+        return false;
     }
 
     //Handles the short click on chat to open chat
@@ -165,14 +196,6 @@ public class ChatsFragment extends Fragment {
 
     }
 
-
-    // TODO: Rename method, update argument and hook method into UI event
-    public void onButtonPressed(Uri uri) {
-        if (mListener != null) {
-            mListener.onChatsFragmentInteraction(uri);
-        }
-    }
-
 //    @Override
 //    public void onAttach(Context context) {
 //        super.onAttach(context);
@@ -184,10 +207,29 @@ public class ChatsFragment extends Fragment {
 //        }
 //    }
 
+    // TODO: Rename method, update argument and hook method into UI event
+    public void onButtonPressed(Uri uri) {
+        if (mListener != null) {
+            mListener.onChatsFragmentInteraction(uri);
+        }
+    }
+
     @Override
     public void onDetach() {
         super.onDetach();
         mListener = null;
+    }
+
+    public void onPause() {
+        super.onPause();
+        LocalBroadcastManager.getInstance(mainActivity.getBaseContext()).unregisterReceiver(r);
+    }
+
+    public void onResume() {
+        super.onResume();
+        r = new MyReceiver();
+        LocalBroadcastManager.getInstance(mainActivity.getBaseContext()).registerReceiver(r,
+                new IntentFilter("TAG_REFRESH"));
     }
 
     /**
@@ -248,13 +290,22 @@ public class ChatsFragment extends Fragment {
 
             Map.Entry<String,String> item = (Map.Entry<String,String>) getItem(position);
             View rowView = View.inflate(mContext, R.layout.row_chat, null);
+
             TextView recentMessage = (TextView) rowView.findViewById(R.id.textView_recentMessage);
             TextView contact = (TextView) rowView.findViewById(R.id.textView_chatParticipant) ;
 
             String messageContents[] = Utils.messageFromJSON(item.getValue());
             recentMessage.setText(messageContents[1]);
-            contact.setText(messageContents[0]);
+            contact.setText(item.getKey());
+
             return rowView;
+        }
+    }
+
+    private class MyReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            refresh();
         }
     }
 }

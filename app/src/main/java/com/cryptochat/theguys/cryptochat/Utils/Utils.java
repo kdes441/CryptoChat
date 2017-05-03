@@ -8,7 +8,6 @@ import android.util.Log;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Toast;
 
-
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -23,30 +22,24 @@ import java.util.Stack;
 public class Utils {
 
     //API & ChatModel urls and port number
-    public static String API_URL = "http://10.0.2.2:3000/api/V3";
-    //TODO Remember to change from dev ip
-    public static String CHAT_URL = "10.0.2.2";
-    public static String WS_URL = "ws://10.0.2.2:5665";
-//    public static String CHAT_URL = "54.175.15.9";
-    public static int CHAT_PORT = 5665;
-
+    public final static String API_URL = "http://10.0.2.2/api/v1";
+    public final static String CHAT_URL = "10.0.2.2";
+    public final static int CHAT_PORT = 5665;
+    public final static String WS_URL = "ws://10.0.2.2:5665";
+    //API routes
+    public final static String REGISTER_ROUTE = "/sign-up.php";
+    public final static String LOGIN_ROUTE = "/login.php";
+    public final static String UPDATE_PASSWORD_ROUTE = "/update-password.php";
+    public final static String ADD_CONTACT_ROUTE = "/add-contact.php";
+    public final static String DELETE_CONTACT_ROUTE = "/delete-contact.php";
+    public final static String LOGOUT_ROUTE = "/logout.php";
+    public final static String CONTACTS_ROUTE = "/get-contacts.php";
+    //Allows for debug message_row to be seen
+    public final static boolean ALLOW_DEBUG = true;
     //TODO I think this unsafe but fuck it...fix it
     //User info
     public static String USERNAME;
-    public static int USER_ID;
-
-    //API routes
-    public static String REGISTER_ROUTE = "/register";
-    public static String LOGIN_ROUTE = "/login";
-    public static String FRIENDS_LIST_ROUTE = "/friends";
-    public static String UPDATE_PASSWORD_ROUTE = "/updatep";
-    public static String UPDATE_PICTURE_ROUTE = "/updatea";
-    public static String LOGOUT_ROUTE = "/logout";
-    public static String CONTACTS_ROUTE = "/contacts";
-
-    //Allows for debug message_row to be seen
-    public static boolean ALLOW_DEBUG = true;
-
+    public static String USER_ID;
     //Stores current conversation
     public static HashMap<String,Stack> SAVED_CHATS = new HashMap<>();
 
@@ -54,7 +47,8 @@ public class Utils {
     public static String CURRENT_CHAT = "";
 
     //Handler is to update
-    public static Handler handler;
+    public static Handler handlerChatWindow;
+    public static Handler handlerChatPreview;
 
     //Outputs debug message if ALLOW_DEBUG is set to true
     public static void output(String msg){
@@ -113,14 +107,11 @@ public class Utils {
         //Checks if chat is currently open
         if(CURRENT_CHAT.equals(from)){
             //There is a chat open
-//            HashMap<String,String> hashMap = new HashMap<>();
-//            hashMap.put(from,message);
-            Message message1 = handler.obtainMessage();
-//            message1.obj = hashMap;
+            Message message1 = handlerChatWindow.obtainMessage();
             //TODO clean this up
             message1.obj = messageToJSON(from,message);
-            handler.sendMessage(message1);
-//            hashMap = null;
+            handlerChatWindow.sendMessage(message1);
+
         } else {
             //If its not  open
             Stack map = SAVED_CHATS.get(from);
@@ -139,6 +130,7 @@ public class Utils {
                 SAVED_CHATS.put(from,map);
             }
             map = null;
+            handlerChatPreview.sendMessage(new Message());
         }
     }
 }

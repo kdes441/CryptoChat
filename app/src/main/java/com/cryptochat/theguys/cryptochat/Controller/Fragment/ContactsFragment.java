@@ -4,10 +4,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.support.v4.widget.SwipeRefreshLayout;
+import android.view.ContextMenu;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -21,9 +22,17 @@ import com.cryptochat.theguys.cryptochat.Controller.ChatActivity;
 import com.cryptochat.theguys.cryptochat.Controller.MainActivity;
 import com.cryptochat.theguys.cryptochat.Model.ContactsModel;
 import com.cryptochat.theguys.cryptochat.R;
+import com.cryptochat.theguys.cryptochat.Utils.HttpService;
 import com.cryptochat.theguys.cryptochat.Utils.Utils;
+import com.loopj.android.http.AsyncHttpResponseHandler;
+import com.loopj.android.http.RequestParams;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.List;
+
+import cz.msebera.android.httpclient.Header;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -38,36 +47,22 @@ public class ContactsFragment extends Fragment{
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String ARG_PARAM1 = "param1";
     private static final String ARG_PARAM2 = "param2";
-
+    static ContactsModel contactsModel;
     // TODO: Rename and change types of parameters
     private String mParam1;
     private String mParam2;
-    static ContactsModel contactsModel;
     private ContactAdapter adapter;
     private MainActivity mainActivity;
+    private SwipeRefreshLayout swipeRefresh;
+    private Context c;
+    private String contactName;
+    private int contactPosition;
+
 
     private OnFragmentInteractionListener mListener;
 
     public ContactsFragment() {
         // Required empty public constructor
-    }
-
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment ContactsFragment.
-     */
-    // TODO: Rename and change types and number of parameters
-    public static ContactsFragment newInstance(String param1, String param2) {
-        ContactsFragment fragment = new ContactsFragment();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
-        fragment.setArguments(args);
-        return fragment;
     }
 
     @Override
@@ -84,15 +79,15 @@ public class ContactsFragment extends Fragment{
         //Contacts main view
         View view = inflater.inflate(R.layout.fragment_contacts, container, false);
         ListView listView = (ListView) view.findViewById(R.id.listView_contacts);
+        registerForContextMenu(listView);
         mainActivity = (MainActivity) getActivity();
+        c = mainActivity.getBaseContext();
 
         contactsModel = new ContactsModel();
         contactsModel.getContacts();
 
         adapter = new ContactAdapter(mainActivity.getApplicationContext(),contactsModel.getContactsModels());
         listView.setAdapter(adapter);
-
-        FloatingActionButton fab = (FloatingActionButton) mainActivity.findViewById(R.id.fab);
 
 
         //Listens for click on contact in the contact menu
@@ -103,7 +98,17 @@ public class ContactsFragment extends Fragment{
             }
         });
 
-        SwipeRefreshLayout swipeRefresh = (SwipeRefreshLayout) view.findViewById(R.id.swipe_contacts);
+        listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+                contactName = ((ContactsModel) adapter.getItem(position)).getUsername();
+                contactPosition = position;
+                return false;
+            }
+        });
+
+        swipeRefresh = (SwipeRefreshLayout) view.findViewById(R.id.swipe_contacts);
 
         //Listening for pull down refresh
         swipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
@@ -120,11 +125,26 @@ public class ContactsFragment extends Fragment{
     }
 
 
-    // TODO: Rename method, update argument and hook method into UI event
-    public void onButtonPressed(Uri uri) {
-        if (mListener != null) {
-            mListener.onContactsFragmentInteraction(uri);
+    @Override
+    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
+        super.onCreateContextMenu(menu, v, menuInfo);
+        menu.add(0, v.getId(), 0, "Delete Contact");
+    }
+
+    @Override
+    public boolean onContextItemSelected(MenuItem item) {
+
+        if (getUserVisibleHint()) {
+            deleteContact();
+            Utils.SAVED_CHATS.remove(contactName);
+            //adapter.deleteRow();
+            adapter.contactsModelList.remove(contactPosition);
+
+            adapter.notifyDataSetChanged();
+            //refresh();
+            return true;
         }
+        return false;
     }
 
     @Override
@@ -152,23 +172,62 @@ public class ContactsFragment extends Fragment{
             Toast.makeText(mainActivity.getBaseContext(),R.string.error_contact_offline,Toast.LENGTH_SHORT).show();
     }
 
+    //Delete contact from users friends list
+    private void deleteContact() {
+        //Creates parameter for the post request
+        RequestParams params = new RequestParams();
+        params.put("ContactName", contactName);
+        params.put("UserID", Utils.USER_ID);
 
-    /**
-     * This interface must be implemented by activities that contain this
-     * fragment to allow an interaction in this fragment to be communicated
-     * to the activity and potentially other fragments contained in that
-     * activity.
-     * <p>
-     * See the Android Training lesson <a href=
-     * "http://developer.android.com/training/basics/fragments/communicating.html"
-     * >Communicating with Other Fragments</a> for more information.
-     */
+        HttpService.post(Utils.DELETE_CONTACT_ROUTE, params, new AsyncHttpResponseHandler() {
+            @Override
+            public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
+                String response = new String(responseBody);
+                JSONObject res;
+                boolean success;
+                String returnMessage;
+
+                //Parses JSON message
+                try {
+                    res = new JSONObject(response).getJSONObject("DeleteContactAttempt");
+                    success = res.getBoolean("SuccessfulAttempt");
+                    returnMessage = res.getString("ReturnMessage");
+
+                    //Checks if its successful which means the json will have other information
+                    if (success) {
+                        Utils.toast(returnMessage, c);
+
+                    } else
+                        Utils.toast(returnMessage, c);
+
+
+                } catch (JSONException ex) {
+                    ex.printStackTrace();
+                    Utils.toast(String.valueOf(R.string.error_network), c);
+                }
+                swipeRefresh.setRefreshing(false);
+
+            }
+
+            @Override
+            public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
+                Utils.toast(String.valueOf(R.string.error_network), c);
+                Utils.output(responseBody.toString());
+            }
+
+            @Override
+            public void onStart() {
+                swipeRefresh.setRefreshing(true);
+            }
+        });
+    }
+
     public interface OnFragmentInteractionListener {
         // TODO: Update argument type and name
         void onContactsFragmentInteraction(Uri uri);
     }
 
-    //TODO besides fuck android check for update ever so often for contacts list
+    //TODO besides fuck android check for update ever so often for contacts list but no polling
     public class ContactAdapter extends BaseAdapter{
 
         public List<ContactsModel> contactsModelList;
@@ -193,18 +252,18 @@ public class ContactsFragment extends Fragment{
         public long getItemId(int position) {
             return 0;
         }
+
         //Clears out current list content
         public  void clear(){
             contactsModelList.clear();
         }
+
         public View getView(int position, View convertView, ViewGroup parent){
             View rowView = View.inflate(mContext, R.layout.row_contact, null);
 
             TextView contactName = (TextView)rowView.findViewById(R.id.text_ContactName);
             TextView contactOnlineStatus = (TextView)rowView.findViewById(R.id.text_ContactOnlineStatus);
             ImageView contactAvatar = (ImageView)rowView.findViewById(R.id.image_ContactAvatar);
-
-            //TODO fix deprecated stuff
             contactAvatar.setImageDrawable(getResources().getDrawable(R.drawable.ic_person));
             contactName.setText(contactsModelList.get(position).getUsername());
 
@@ -215,7 +274,6 @@ public class ContactsFragment extends Fragment{
                 contactOnlineStatus.setTextColor(getResources().getColor(R.color.offline));
             }
             contactOnlineStatus.setText(contactsModelList.get(position).getOnlineStatus());
-            //TODO setup action listner to open up new chat with user or presexisting
             return rowView;
         }
 
